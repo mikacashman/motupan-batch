@@ -62,6 +62,13 @@ def motupan(args):
     else :
         genomes = set(gene_clusters_dict.keys())
 
+    #logging
+    print(f"Sample of genomes: {random.sample(genomes,min(len(genomes),10))}", file = sys.stdout)
+    sample_keys = random.sample(faas.keys(),min(len(faas),10)
+    print(f"Sample of faas: {random.sample(list(faas),min(len(faas),10))}", file = sys.stdout)
+    print(f"Sample of gene_clusters_dict keys: \
+        {random.sample(list(gene_clusters_dict.keys()),min(len(list(gene_clusters_dict.keys())),10))}", file = sys.stdout)
+
     if gene_clusters_dict and len(faas) > 0:
         if len(genomes) != len(faas) or len(faas) != len(gene_clusters_dict):
             print("your faas and gene_clusters_drct are not the same length,\nit might not matter just wanted to let you know.", file = sys.stderr)
@@ -74,7 +81,7 @@ def motupan(args):
     if args.checkm :
         assert os.path.exists(args.checkm), "The file for checkm does not exists"
 
-        print("Parsing the checkm-file", file = sys.stderr)
+        print("Parsing the checkm-file", file = sys.stdout)
         checkm = {k : v['Completeness'] for k,v in parse_checkm(args.checkm).items()}
         checkm = {g : checkm.get(g) for g in genomes}
         if not all([v for v in checkm.values()]):
@@ -102,7 +109,7 @@ def motupan(args):
     if faas is None and gene_clusterss is None:
         sys.exit("at least one of --faas and --gene_clusters_file is required")
 
-    print(len(genomes), " genomes in your clade", file = sys.stderr)
+    print(len(genomes), " genomes in your clade", file = sys.stdout)
 
     motu = mOTU( name = name , faas = faas , gene_clusters_dict = gene_clusters_dict, genome_completion_dict = checkm, max_it = max_it, threads = threads, precluster = precluster, method = method)
 
@@ -163,11 +170,11 @@ if __name__ == "__main__":
 
     if len(sys.argv)==1:
         parser.print_help(sys.stderr)
-        print("{script} Version {version}".format(script = __file__, version = __version__), file = sys.stderr)
+        print("{script} Version {version}".format(script = __file__, version = __version__), file = sys.stdout)
         sys.exit(1)
 
     if args.version:
-        print("{script} Version {version}".format(script = __file__, version = __version__), file = sys.stderr)
+        print("{script} Version {version}".format(script = __file__, version = __version__), file = sys.stdout)
         sys.exit()
 
 

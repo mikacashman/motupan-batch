@@ -1,4 +1,5 @@
 import tempfile
+import subprocess
 import sys, os
 import gzip
 from mOTUlizer.config import *
@@ -38,7 +39,37 @@ def compute_COGs(faas, name, precluster = False, threads = 4, method =  "mmseqsC
     else :
         sys.exit("Please make my life easy, either all faas gziped or none gzipped ...")
 
-    os.system(cat + " ".join([*faas.values()]) + " > " + all_faas_file)
+    #build and run cat command
+    cmd = "find " + " ".join([*faas.values()]) + " -type f -exec zcat {} + > " + all_faas_file
+    if len(cmd) < 300000:
+        try:
+            # Execute the command and capture output and error messages
+            #os.system(cat + " ".join([*faas.values()]) + " > " + all_faas_file) #orignal cmd call
+            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
+        except subprocess.CalledProcessError as e:
+            # Command execution failed
+            print("Command execution failed with return code:", e.returncode)
+            print("Error message:", e.output)
+        else:
+            # Command executed successfully
+            print("Command executed successfully.")
+    else:
+        print("Command string too long, taking safe route")
+        try:
+            # Execute the command and capture output and error messages
+            command = ['xargs', '-n', '1', 'zcat']
+            p = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE) 
+            for faa in faas.values(): p.stdin.write((faa + '\n').encode())
+            p.stdin.close()
+            out, _ = p.communicate()
+            output = out.decode()
+        except subprocess.CalledProcessError as e:
+            # Command execution failed
+            print("Command execution failed with return code:", e.returncode)
+            print("Error message:", e.output)
+        else:
+            # Command executed successfully
+            print("Command executed successfully.")    
 
     if precluster:
         cdhit_file = tempfile.NamedTemporaryFile().name
@@ -106,7 +137,7 @@ def compute_COGs(faas, name, precluster = False, threads = 4, method =  "mmseqsC
             print("You need mmseqs2 to run the silix gene-clustering, either install it or run mOTUpan with an other gene-clustering or your own traits", file = sys.stderr)
             sys.exit(-1)
 
-        print("running mmseqs easy-cluster with params --min-seq-id {seqid} --cov-mode {covmode} -c {cov} in {}".format(temp_folder, covmode = covmode, cov = cov, seqid=seqid), file = sys.stderr)
+        print("Running mmseqs:\nmmseqs easy-cluster --threads {threads} --min-seq-id {seqid} --cov-mode {covmode} -c {cov} {faas} {out} {tmp} 2> /dev/null > /dev/null".format(covmode = covmode, cov = cov, seqid=seqid, faas = all_faas_file, out = mmseqs_dat, tmp = temp_folder, threads = threads), file = sys.stdout)
         mmseqs_dat = pjoin(temp_folder, "mmseqs_")
         os.system("mmseqs easy-cluster --threads {threads} --min-seq-id {seqid} --cov-mode {covmode} -c {cov} {faas} {out} {tmp} 2> /dev/null > /dev/null".format(covmode = covmode, cov = cov, seqid=seqid, faas = all_faas_file, out = mmseqs_dat, tmp = temp_folder, threads = threads))
 

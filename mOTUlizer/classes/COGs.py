@@ -30,7 +30,7 @@ def compute_COGs(faas, name, precluster = False, threads = 4, method =  "mmseqsC
             else :
                 prot2faa[i] = [k]
 
-    print("concatenating all faas", file = sys.stderr)
+    print("concatenating all faas", file = sys.stdout)
 
     if all([faa.endswith(".gz") for faa in faas.values()]):
         cat = "zcat "
@@ -79,10 +79,10 @@ def compute_COGs(faas, name, precluster = False, threads = 4, method =  "mmseqsC
             sys.exit(-1)
 
         exec = "cd-hit -i {input} -o {output} -c 0.95 -M 0 -T {threads} -d 0 -s 0.95 >> {log} 2>&1".format(input = all_faas_file, output = cdhit_file, threads = threads, log = "/dev/null")
-        print("Running cd-hit preclustering", file = sys.stderr)
+        print("Running cd-hit preclustering", file = sys.stdout)
         os.system(exec)
 
-        print("parsing cd-hit", file = sys.stderr)
+        print("parsing cd-hit", file = sys.stdout)
 
         with open(cdhit_file + ".clstr") as handle:
             clusters = "\n".join(handle.readlines()).split("Cluster ")
@@ -94,7 +94,7 @@ def compute_COGs(faas, name, precluster = False, threads = 4, method =  "mmseqsC
         clusters = [[cc.split(">")[1].split("... ") for cc in c if ">" in cc and cc != ">"] for c in clusters ]
         clusters = {[cc[0] for cc in c if cc[1] == "*" or cc[1] == "*\n"][0] : [cc[0] for cc in c] for c in clusters}
 
-        print("For", len(prot2faa), "CDSes we got ", len(clusters), "preclusters", file = sys.stderr)
+        print("For", len(prot2faa), "CDSes we got ", len(clusters), "preclusters", file = sys.stdout)
         seqs = [s for s in SeqIO.parse(all_faas_file, "fasta") if s.id in clusters]
         SeqIO.write(seqs, all_faas_file, "fasta")
 
@@ -103,15 +103,15 @@ def compute_COGs(faas, name, precluster = False, threads = 4, method =  "mmseqsC
             print("You need diamond and silix to run the silix gene-clustering, either install it or run mOTUpan with an other gene-clustering or your own traits", file = sys.stderr)
             sys.exit(-1)
 
-        print("all v all diamond for silix", file = sys.stderr)
+        print("all v all diamond for silix", file = sys.stdout)
 
         os.system("diamond makedb --db {faas} --in {faas} > /dev/null 2> /dev/null".format(faas = all_faas_file))
         os.system("diamond blastp --more-sensitive -p {threads} -f 6 -q {faas} --db {faas} -o {out} 2> /dev/null > /dev/null".format(faas = all_faas_file, out = temp_out, threads = threads))
 
-        print("running silix", file = sys.stderr)
+        print("running silix", file = sys.stdout)
         os.system("silix {faas} {out} > {clust_temp} #2> /dev/null".format(faas = all_faas_file, out = temp_out, clust_temp = temp_clust))
 
-        print("parsing silix", file = sys.stderr)
+        print("parsing silix", file = sys.stdout)
         with open(temp_clust) as handle:
             if precluster:
                 recs = {g : l[:-1].split()[0]  for l in handle for g in clusters[l[:-1].split()[1]]}
@@ -137,8 +137,8 @@ def compute_COGs(faas, name, precluster = False, threads = 4, method =  "mmseqsC
             print("You need mmseqs2 to run the silix gene-clustering, either install it or run mOTUpan with an other gene-clustering or your own traits", file = sys.stderr)
             sys.exit(-1)
 
-        print("Running mmseqs:\nmmseqs easy-cluster --threads {threads} --min-seq-id {seqid} --cov-mode {covmode} -c {cov} {faas} {out} {tmp} 2> /dev/null > /dev/null".format(covmode = covmode, cov = cov, seqid=seqid, faas = all_faas_file, out = mmseqs_dat, tmp = temp_folder, threads = threads), file = sys.stdout)
         mmseqs_dat = pjoin(temp_folder, "mmseqs_")
+        print("Running mmseqs:\nmmseqs easy-cluster --threads {threads} --min-seq-id {seqid} --cov-mode {covmode} -c {cov} {faas} {out} {tmp} 2> /dev/null > /dev/null".format(covmode = covmode, cov = cov, seqid=seqid, faas = all_faas_file, out = mmseqs_dat, tmp = temp_folder, threads = threads), file = sys.stdout)
         os.system("mmseqs easy-cluster --threads {threads} --min-seq-id {seqid} --cov-mode {covmode} -c {cov} {faas} {out} {tmp} 2> /dev/null > /dev/null".format(covmode = covmode, cov = cov, seqid=seqid, faas = all_faas_file, out = mmseqs_dat, tmp = temp_folder, threads = threads))
 
         with open(mmseqs_dat + "_cluster.tsv") as handle:
@@ -153,7 +153,7 @@ def compute_COGs(faas, name, precluster = False, threads = 4, method =  "mmseqsC
         rep2clust = {k : name + str(i).zfill(fill) for i,k in enumerate(set(recs.values()))}
         gene_clusters2rep = {v: k for k,v in rep2clust.items()}
 
-        print("For", len(recs), "CDSes we got ", len(gene_clusters2rep), " gene-clusters", file = sys.stderr)
+        print("For", len(recs), "CDSes we got ", len(gene_clusters2rep), " gene-clusters", file = sys.stdout)
 
         recs = {k : rep2clust[v] for k, v in recs.items()}
         genome2gene_clusters = {k : set() for k in faas.keys()}

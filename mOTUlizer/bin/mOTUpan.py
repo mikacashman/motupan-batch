@@ -64,8 +64,8 @@ def motupan(args):
 
     #logging
     print(f"Sample of genomes: {random.sample(genomes,min(len(genomes),10))}", file = sys.stdout)
-    sample_keys = random.sample(faas.keys(),min(len(faas),10)
-    print(f"Sample of faas: {random.sample(list(faas),min(len(faas),10))}", file = sys.stdout)
+    sample_keys = random.sample(faas.keys(),min(len(faas),10))
+    print(f"Sample of faas: {[faas[x] for x in sample_keys]}", file = sys.stdout)
     print(f"Sample of gene_clusters_dict keys: \
         {random.sample(list(gene_clusters_dict.keys()),min(len(list(gene_clusters_dict.keys())),10))}", file = sys.stdout)
 

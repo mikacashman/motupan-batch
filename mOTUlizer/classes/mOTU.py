@@ -35,7 +35,7 @@ class mOTU:
         self.name = name
         self.faas = faas
         if not quiet:
-            print("Creating mOTU for mOTUpan", file = sys.stderr)
+            print("Creating mOTU for mOTUpan", file = sys.stdout)
         if  not gene_clusters_dict :
             tt = compute_COGs(self.faas, name = name, precluster = precluster, threads = threads)
             self.gene_clusters_dict = tt['genome2gene_clusterss']
@@ -75,7 +75,7 @@ class mOTU:
             std_dev = lambda data: variance(data, mean(data))**0.5  if 'NA' not in data else "NA"
 
             while len(self.mock) < boots:
-                print("Running bootstrap {}/{}".format(len(self.mock)+1, boots), file = sys.stderr)
+                print("Running bootstrap {}/{}".format(len(self.mock)+1, boots), file = sys.stdout)
                 completnesses = {"Genome_{}".format(i) : c.new_completness for i,c in enumerate(self)}
 
                 accessory = sorted([v for k,v in self.gene_clustersCounts.items() if k not in self.core])
@@ -214,7 +214,7 @@ class mOTU:
         core_len = len(self.core)
         i = 1
         if not self.quiet:
-            print("iteration 1 : ", core_len, "sum_abs_LLHR:" , sum([l if l > 0 else -l for l in likelies.values()]), file = sys.stderr)
+            print("iteration 1 : ", core_len, "sum_abs_LLHR:" , sum([l if l > 0 else -l for l in likelies.values()]), file = sys.stdout)
         for mag in self:
             if len(self.core) > 0:
                 mag.new_completness = 100*len(mag.gene_clusterss.intersection(self.core))/len(self.core)
@@ -235,7 +235,7 @@ class mOTU:
                 mag.new_completness = mag.new_completness if mag.new_completness < 99.9 else 99.9
                 mag.new_completness = mag.new_completness if mag.new_completness > 0 else 0.01
             if not self.quiet:
-                print("iteration",i, ": ", new_core_len, "sum_abs_LLHR:" , sum([l if l > 0 else -l for l in likelies.values()]), file = sys.stderr)
+                print("iteration",i, ": ", new_core_len, "sum_abs_LLHR:" , sum([l if l > 0 else -l for l in likelies.values()]), file = sys.stdout)
             if self.core == old_core:
                break
             else :
@@ -248,7 +248,7 @@ class mOTU:
             pp = pp.format(name = self.name, nb_mags = len(self), core_len = core_len, mean_start = mean([b.checkm_complet for b in self]),
                         mean_new =  mean([b.new_completness for b in self]), llhr =  sum([l if l > 0 else -l for l in likelies.values()]),
                         trait_count = mean([100*len(b.gene_clusterss)/b.new_completness for b in self]))
-            print(pp, file = sys.stderr)
+            print(pp, file = sys.stdout)
         self.iterations = i -1
         return likelies
 
@@ -377,7 +377,7 @@ class mOTU:
     def cluster_MetaBins(cls , all_bins, dist_dict, ani_cutoff = 95, prefix = "mOTU_", mag_complete = 40, mag_contamin = 5, sub_complete = 0, sub_contamin = 100):
         import igraph
 
-        print("seeding bin-graph", file = sys.stderr )
+        print("seeding bin-graph", file = sys.stdout )
 
         all_bins = {a.name : a for a in all_bins}
 
@@ -390,22 +390,22 @@ class mOTU:
         species_graph.add_vertices(len(vertexDeict))
         species_graph.add_edges([(vertexDeict[k[0]], vertexDeict[k[1]]) for k in good_pairs])
 
-        print("getting clusters", file = sys.stderr)
+        print("getting clusters", file = sys.stdout)
 
         genome_clusters = [[rev_vertexDeict[cc] for cc in c ] for c in species_graph.components(mode=igraph.STRONG)]
 
         mean = lambda l : sum([len(ll) for ll in l])/len(l)
 
-        print("recruiting to graph of the", len(genome_clusters) ," mOTUs of mean length", mean(genome_clusters), file = sys.stderr)
+        print("recruiting to graph of the", len(genome_clusters) ," mOTUs of mean length", mean(genome_clusters), file = sys.stdout)
 
 
         left_pairs = {k : v for k, v in dist_dict.items() if v > ani_cutoff and k[0] != k[1] and ((decent_sub(k[0]) and good_mag(k[1])) or (decent_sub(k[1]) and good_mag(k[0])))}
-        print("looking for good_left pairs", file = sys.stderr)
+        print("looking for good_left pairs", file = sys.stdout)
 #        print(left_pairs)
 
         subs = {l : (None,0) for ll in left_pairs.keys() for l in ll if not good_mag(l)}
 #        print(subs)
-        print("looking for best mOTU match", file = sys.stderr)
+        print("looking for best mOTU match", file = sys.stdout)
         for p,ani in left_pairs.items():
             if p[0] in subs and subs[p[0]][1] < ani:
                 subs[p[0]] = (p[1], ani)
@@ -414,7 +414,7 @@ class mOTU:
 
         genome_clusters = [set(gg) for gg in genome_clusters]
 
-        print("append to the", len(genome_clusters) ,"mOTUs of mean length", mean(genome_clusters), file = sys.stderr)
+        print("append to the", len(genome_clusters) ,"mOTUs of mean length", mean(genome_clusters), file = sys.stdout)
         for k, v in subs.items():
             for g in genome_clusters:
                 if v[0] in g :
@@ -422,7 +422,7 @@ class mOTU:
 
         genome_clusters = [list(gg) for gg in genome_clusters]
 
-        print("processing the", len(genome_clusters) ,"mOTUs of mean length", mean(genome_clusters), file = sys.stderr)
+        print("processing the", len(genome_clusters) ,"mOTUs of mean length", mean(genome_clusters), file = sys.stdout)
         #print(genome_clusters)
 
         zeros = len(str(len(genome_clusters)))

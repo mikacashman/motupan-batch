@@ -40,7 +40,7 @@ def compute_COGs(faas, name, precluster = False, threads = 4, method =  "mmseqsC
         sys.exit("Please make my life easy, either all faas gziped or none gzipped ...")
 
     #build and run cat command
-    cmd = "find " + " ".join([*faas.values()]) + " -type f -exec zcat {} + > " + all_faas_file
+    cmd = "find " + " ".join([*faas.values()]) + " -type f -exec " + cat + " {} + > " + all_faas_file
     if len(cmd) < 300000:
         try:
             # Execute the command and capture output and error messages

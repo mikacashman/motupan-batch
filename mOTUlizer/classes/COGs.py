@@ -39,37 +39,47 @@ def compute_COGs(faas, name, precluster = False, threads = 4, method =  "mmseqsC
     else :
         sys.exit("Please make my life easy, either all faas gziped or none gzipped ...")
 
-    #build and run cat command
-    cmd = "find " + " ".join([*faas.values()]) + " -type f -exec " + cat + " {} + > " + all_faas_file
-    if len(cmd) < 300000:
-        try:
-            # Execute the command and capture output and error messages
-            #os.system(cat + " ".join([*faas.values()]) + " > " + all_faas_file) #orignal cmd call
-            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
-        except subprocess.CalledProcessError as e:
-            # Command execution failed
-            print("Command execution failed with return code:", e.returncode)
-            print("Error message:", e.output)
-        else:
-            # Command executed successfully
-            print("Command executed successfully.")
+    # Attempt to reduce command length
+    # Extract the largest matching prefix
+    common_prefix = os.path.dirname(os.path.commonprefix([*faas.values()]))
+    # Ensure the common_prefix ends with a slash to make it a valid directory path
+    if not common_prefix.endswith('/'):
+        common_prefix += '/'
+    # Create an environment variable containing the common prefix
+    os.environ['BASE_PATH'] = common_prefix
+    # Store the current working directory
+    original_directory = os.getcwd()
+    # Change the working directory to BASE_PATH
+    os.chdir(common_prefix)
+    # Create a list to hold the modified values for the command
+    shortened_faas = [value.replace(common_prefix, '') for value in faas.values()]
+
+    ##TODO: Does this create any overhead for the bash script?  Maybe change
+    ##      So that you only do that if the command length is above the treshold of 250k
+    
+    # Build Cat command and bash script
+    cmd = "find " + " ".join(shortened_faas) + " -type f -print0 | xargs -0 " + cat + " > " + all_faas_file
+    print(f"length of cmd is: {len(cmd)}")
+    cat_script = pjoin(temp_folder, "concat.sh")
+    with open(cat_script, 'w') as file: file.write(cmd)
+    print(f"Path to concat script: {cat_script}")
+    print(f"Path to concat faa file: {all_faas_file}")
+    
+    #Execute and run bash script with cat
+    cmd = "bash " + cat_script
+    try:
+        # Execute the command and capture output and error messages
+        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
+    except subprocess.CalledProcessError as e:
+        # Command execution failed
+        print("Command execution failed with return code:", e.returncode)
+        print("Error message:", e.output)
     else:
-        print("Command string too long, taking safe route")
-        try:
-            # Execute the command and capture output and error messages
-            command = ['xargs', '-n', '1', 'zcat']
-            p = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE) 
-            for faa in faas.values(): p.stdin.write((faa + '\n').encode())
-            p.stdin.close()
-            out, _ = p.communicate()
-            output = out.decode()
-        except subprocess.CalledProcessError as e:
-            # Command execution failed
-            print("Command execution failed with return code:", e.returncode)
-            print("Error message:", e.output)
-        else:
-            # Command executed successfully
-            print("Command executed successfully.")    
+        # Command executed successfully
+        print("Command executed successfully.")
+    finally:
+        # Change the working directory back to the original directory
+        os.chdir(original_directory)
 
     if precluster:
         cdhit_file = tempfile.NamedTemporaryFile().name
